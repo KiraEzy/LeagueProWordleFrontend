@@ -14,12 +14,12 @@ function Hero() {
       icon: <UserOutlined />,
       onClick: () => navigate('/single-player'),
     },
-    {
-      key: 'daily',
-      label: '每日挑战',
-      icon: <CalendarOutlined />,
-      onClick: () => navigate('/daily'),
-    },
+    // {
+    //   key: 'daily',
+    //   label: '每日挑战',
+    //   icon: <CalendarOutlined />,
+    //   onClick: () => navigate('/daily'),
+    // },
     {
       key: 'record',
       label: '记录模式',

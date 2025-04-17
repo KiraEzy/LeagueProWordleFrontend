@@ -571,11 +571,10 @@ function RecordModePage() {
   return (
     <div className="single-player-page record-mode-page">
       <div className="game-header">
-        <Title level={2}>Record Mode <TrophyOutlined style={{ color: '#FFB900' }} /></Title>
-        <AppearanceSettings gameMode="record" />
+        <Title level={2}>记录模式 <TrophyOutlined style={{ color: '#FFB900' }} /></Title>
         {/* Always show answer regardless of debug mode */}
         <Tag color="blue" icon={<QuestionCircleOutlined />}>
-          Current Answer: {targetPlayer?.name} ({targetPlayer?.formattedTeam}
+          当前答案: {targetPlayer?.name} ({targetPlayer?.formattedTeam}
           {targetPlayer?.current_team_region ? ` - ${targetPlayer?.current_team_region}` : ''}, 
           {targetPlayer?.tournament_role}, {translateNationality(targetPlayer?.nationality)}
           {(targetPlayer?.residency || targetPlayer?.Residency) ? 
@@ -583,50 +582,50 @@ function RecordModePage() {
         </Tag>
         <div className="game-rules">
           <Paragraph>
-            Guess the League of Legends Pro Player in as few attempts as possible to set your personal record!
+            尽可能少的尝试次数猜出英雄联盟职业选手，创造您的最佳记录！
           </Paragraph>
           <div className="rules-container">
             <Paragraph className="rule-item">
               <span className="cell-example correct"></span> 
-              <span>Correct attribute</span>
+              <span>属性完全匹配</span>
             </Paragraph>
             <Paragraph className="rule-item">
               <span className="cell-example close"></span> 
-              <span>Close match (±2 for Worlds, same residency for Country, same region for Team)</span>
+              <span>接近匹配（世界赛±2，国家相同区域，战队相同赛区）</span>
             </Paragraph>
             <Paragraph className="rule-item">
               <span className="cell-example incorrect"></span> 
-              <span>Incorrect attribute</span>
+              <span>属性不匹配</span>
             </Paragraph>
           </div>
         </div>
-        <Text type="secondary">You have {MAX_GUESSES - guesses.length} guesses remaining</Text>
+        <Text type="secondary">您还剩 {MAX_GUESSES - guesses.length} 次猜测机会</Text>
       </div>
 
       <div className="game-board">
         <div className="guess-header">
-          <div className="attribute-header">Player</div>
+          <div className="attribute-header">选手</div>
           <div className="attribute-header">
-            Team
-            <Tooltip title="Exact team match (green), same team region (orange), or Retired (for retired players)">
+            战队
+            <Tooltip title="完全匹配战队（绿色），相同赛区战队（橙色），或已退役（灰色）">
               <QuestionCircleOutlined className="header-icon" />
             </Tooltip>
           </div>
           <div className="attribute-header">
-            Role
-            <Tooltip title="Position played at Worlds (may differ from current role)">
+            位置
+            <Tooltip title="世界赛上的位置（可能与当前角色不同）">
               <QuestionCircleOutlined className="header-icon" />
             </Tooltip>
           </div>
           <div className="attribute-header">
-            Country
-            <Tooltip title="Exact nationality (green) or same residency (orange)">
+            国籍
+            <Tooltip title="完全匹配国籍（绿色）或相同赛区（橙色）">
               <QuestionCircleOutlined className="header-icon" />
             </Tooltip>
           </div>
           <div className="attribute-header">
-            Worlds / MSI
-            <Tooltip title="Number of World and MSI appearances">
+            世界赛/MSI
+            <Tooltip title="世界赛和MSI的出场次数">
               <QuestionCircleOutlined className="header-icon" />
             </Tooltip>
           </div>
@@ -674,7 +673,7 @@ function RecordModePage() {
             options={filterOptions(currentGuess)}
             onSelect={handleSelectPlayer}
             onChange={handleInputChange}
-            placeholder="Enter player name"
+            placeholder="输入选手名称"
             disabled={gameStatus !== 'playing'}
             style={{ width: '100%' }}
             filterOption={false}
@@ -684,32 +683,32 @@ function RecordModePage() {
             onClick={handleSubmitGuess}
             disabled={gameStatus !== 'playing' || !currentGuess.trim()}
           >
-            Submit
+            提交
           </Button>
         </div>
       ) : (
         <div className="game-over">
           <Title level={3}>
-            {gameStatus === 'won' ? 'Congratulations!' : 'Game Over!'}
+            {gameStatus === 'won' ? '恭喜！' : '游戏结束！'}
           </Title>
           <Text>
             {gameStatus === 'won' 
-              ? `You guessed ${targetPlayer.name} in ${guesses.length} attempts.`
-              : `The player was ${targetPlayer.name}.`
+              ? `您用了 ${guesses.length} 次尝试猜出了 ${targetPlayer.name}。`
+              : `正确答案是 ${targetPlayer.name}。`
             }
           </Text>
           <Button type="primary" onClick={startNewGame}>
-            Play Again
+            再玩一次
           </Button>
         </div>
       )}
 
       <div className="game-stats">
-        <Title level={4}>Your Record Stats</Title>
+        <Title level={4}>您的记录统计</Title>
         <div className="stats-grid record-stats">
           <div className="stat-item">
             <div className="stat-value">{gameStats.played}</div>
-            <div className="stat-label">Played</div>
+            <div className="stat-label">已玩</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">
@@ -717,25 +716,25 @@ function RecordModePage() {
                 ? Math.round((gameStats.won / gameStats.played) * 100) 
                 : 0}%
             </div>
-            <div className="stat-label">Win %</div>
+            <div className="stat-label">胜率</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">{gameStats.bestScore || '-'}</div>
-            <div className="stat-label">Best Score</div>
+            <div className="stat-label">最佳成绩</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">
               {gameStats.averageScore ? gameStats.averageScore.toFixed(1) : '-'}
             </div>
-            <div className="stat-label">Avg. Score</div>
+            <div className="stat-label">平均成绩</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">{gameStats.currentStreak}</div>
-            <div className="stat-label">Current Streak</div>
+            <div className="stat-label">当前连胜</div>
           </div>
           <div className="stat-item">
             <div className="stat-value">{gameStats.maxStreak}</div>
-            <div className="stat-label">Max Streak</div>
+            <div className="stat-label">最大连胜</div>
           </div>
         </div>
       </div>
