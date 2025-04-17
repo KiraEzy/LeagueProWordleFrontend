@@ -4,8 +4,11 @@ import { GoogleOutlined } from '@ant-design/icons';
 import { initiateGoogleLogin } from '../services/api';
 import './GoogleLogin.css';
 
-// Base API URL - from environment variable or fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.239:5432/api';
+// Get base URL from environment or default
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// In production with relative URL, use the current domain
+const API_BASE_URL = apiBaseUrl === '/' ? '/api' : `${apiBaseUrl}/api`;
 
 // Extract the base server URL (without /api)
 const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');

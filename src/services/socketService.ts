@@ -1,8 +1,11 @@
 import { io, Socket } from 'socket.io-client';
 import { getUsername, isAuthenticated } from './sessionService';
 
-// API URL from environment variable or fallback
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5432';
+// Get the API URL from environment or default
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5432';
+
+// In production with relative URL, use the current domain
+const API_URL = apiUrl === '/' ? window.location.origin : apiUrl;
 
 // Socket.io events
 export enum SocketEvents {

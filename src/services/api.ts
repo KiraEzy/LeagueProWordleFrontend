@@ -8,8 +8,9 @@ declare global {
   }
 }
 
-// Base API URL - from environment variable or fallback
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.239:5432/api';
+// In production with relative URL, we need to prepend /api
+const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = rawBaseUrl === '/' ? '/api' : `${rawBaseUrl}/api`;
 
 // Extract the base server URL (without /api)
 export const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');
