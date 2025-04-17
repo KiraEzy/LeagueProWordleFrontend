@@ -276,7 +276,7 @@ export async function registerUser(username: string, email?: string) {
  * This will redirect the user to the Google login page
  */
 export function initiateGoogleLogin() {
-  window.location.href = `${SERVER_URL}/api/auth/google`;
+  window.location.href = `${SERVER_URL}/auth/google`;
 }
 
 /**

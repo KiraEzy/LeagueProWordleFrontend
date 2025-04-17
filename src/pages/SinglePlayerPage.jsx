@@ -567,13 +567,13 @@ function SinglePlayerPage() {
       <div className="game-header">
         <Title level={2}>练习模式</Title>
         {/* Always show answer regardless of debug mode */}
-        <Tag color="blue" icon={<QuestionCircleOutlined />}>
+        {/* <Tag color="blue" icon={<QuestionCircleOutlined />}>
           当前答案: {targetPlayer?.name} ({targetPlayer?.formattedTeam}
           {targetPlayer?.current_team_region ? ` - ${targetPlayer?.current_team_region}` : ''}, 
           {targetPlayer?.tournament_role}, {translateNationality(targetPlayer?.nationality)}
           {(targetPlayer?.residency || targetPlayer?.Residency) ? 
             ` / ${targetPlayer?.residency || targetPlayer?.Residency}` : ''})
-        </Tag>
+        </Tag> */}
         <div className="game-rules">
           <Paragraph>
             猜出曾参加过世界赛的英雄联盟职业选手，您有 <strong>{MAX_GUESSES}</strong> 次尝试机会。

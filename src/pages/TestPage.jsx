@@ -90,7 +90,7 @@ function TestPage() {
             onClick={testDailyComplete}
             loading={loading}
           >
-            Test /game/daily/complete
+            Test api/game/daily/complete
           </Button>
           
           {error && (

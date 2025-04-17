@@ -573,13 +573,13 @@ function RecordModePage() {
       <div className="game-header">
         <Title level={2}>记录模式 <TrophyOutlined style={{ color: '#FFB900' }} /></Title>
         {/* Always show answer regardless of debug mode */}
-        <Tag color="blue" icon={<QuestionCircleOutlined />}>
+        {/* <Tag color="blue" icon={<QuestionCircleOutlined />}>
           当前答案: {targetPlayer?.name} ({targetPlayer?.formattedTeam}
           {targetPlayer?.current_team_region ? ` - ${targetPlayer?.current_team_region}` : ''}, 
           {targetPlayer?.tournament_role}, {translateNationality(targetPlayer?.nationality)}
           {(targetPlayer?.residency || targetPlayer?.Residency) ? 
             ` / ${targetPlayer?.residency || targetPlayer?.Residency}` : ''})
-        </Tag>
+        </Tag> */}
         <div className="game-rules">
           <Paragraph>
             尽可能少的尝试次数猜出英雄联盟职业选手，创造您的最佳记录！
