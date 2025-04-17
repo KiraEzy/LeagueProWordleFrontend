@@ -8,8 +8,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
-    allowedHosts: ['localhost', '192.168.1.189', 'lolproguess.net', 'localhost',
-      'lolproguess.net',
-      'www.lolproguess.net']
+    allowedHosts: true  // Allow all hosts for Cloudflare proxy
   }
 })
