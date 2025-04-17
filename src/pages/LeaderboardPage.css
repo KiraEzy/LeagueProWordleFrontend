@@ -1,0 +1,99 @@
+.leaderboard-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.leaderboard-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #0A1428;
+  text-align: center;
+}
+
+.leaderboard-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-top: 2rem;
+}
+
+.leaderboard-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 150px;
+  padding: 15px 20px;
+  background-color: #0A1428;
+  color: white;
+  font-weight: 600;
+  text-align: left;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 150px;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.3s;
+}
+
+.leaderboard-row:hover {
+  background-color: #f9f9f9;
+}
+
+.leaderboard-row:nth-child(even) {
+  background-color: #f5f5f5;
+}
+
+.leaderboard-row:nth-child(even):hover {
+  background-color: #f0f0f0;
+}
+
+.rank {
+  font-weight: bold;
+  color: #0A1428;
+}
+
+.player {
+  font-weight: 500;
+}
+
+.wins, .avg-guesses {
+  text-align: center;
+}
+
+/* Top 3 players styling */
+.leaderboard-row:nth-child(1) .rank {
+  color: #C89B3C; /* Gold */
+  font-size: 1.1rem;
+}
+
+.leaderboard-row:nth-child(2) .rank {
+  color: #aaa9ad; /* Silver */
+  font-size: 1.05rem;
+}
+
+.leaderboard-row:nth-child(3) .rank {
+  color: #cd7f32; /* Bronze */
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .leaderboard-header, .leaderboard-row {
+    grid-template-columns: 50px 1fr 70px 90px;
+    font-size: 0.9rem;
+    padding: 12px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .leaderboard-header, .leaderboard-row {
+    grid-template-columns: 40px 1fr 60px 80px;
+    font-size: 0.8rem;
+    padding: 10px 8px;
+  }
+  
+  .leaderboard-page h1 {
+    font-size: 2rem;
+  }
+} 

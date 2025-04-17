@@ -1,0 +1,150 @@
+/* Hero styles */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 800px;
+  padding: 0 20px;
+}
+
+.hero h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+  color: #0A1428;
+  font-weight: 700;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Heiti SC', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.hero-subtitle {
+  font-size: 1.3rem;
+  color: #5B5A56;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Heiti SC', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+/* Ant Design button overrides */
+.single-player-btn.ant-btn-primary {
+  background-color: #C89B3C !important;
+  border-color: #C89B3C !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  font-size: 16px !important;
+  box-shadow: none !important;
+}
+
+.single-player-btn.ant-btn-primary:hover,
+.single-player-btn.ant-btn-primary:focus {
+  background-color: #A17623 !important;
+  border-color: #A17623 !important;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.multiplayer-btn.ant-btn {
+  background-color: #091428 !important;
+  border-color: #091428 !important;
+  color: white !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  font-size: 16px !important;
+  box-shadow: none !important;
+}
+
+.multiplayer-btn.ant-btn:hover,
+.multiplayer-btn.ant-btn:focus {
+  background-color: #0A323C !important;
+  border-color: #0A323C !important;
+  color: white !important;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ant Design dropdown styles */
+.ant-dropdown-menu-item a {
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ant-dropdown-menu-item a:hover {
+  color: #C89B3C;
+}
+
+.ant-dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal styles */
+.ant-modal-content {
+  border-radius: 8px;
+}
+
+.ant-modal-header {
+  border-radius: 8px 8px 0 0;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  color: #0A1428;
+}
+
+.ant-modal-footer .ant-btn-primary {
+  background-color: #C89B3C;
+  border-color: #C89B3C;
+}
+
+.ant-modal-footer .ant-btn-primary:hover {
+  background-color: #A17623;
+  border-color: #A17623;
+}
+
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2.8rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .single-player-btn.ant-btn-primary,
+  .multiplayer-btn.ant-btn {
+    width: 100% !important;
+  }
+} 
+  .single-player-btn.ant-btn-primary,
+  .multiplayer-btn.ant-btn {
+    width: 100% !important;
+  }
+} 
