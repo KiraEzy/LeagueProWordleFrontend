@@ -1,16 +1,24 @@
 // API service for communicating with the backend
 import { getOrCreateAnonymousId, getAuthToken } from './sessionService';
 
-// TypeScript type declaration for import.meta.env
+// Use the proper ImportMetaEnv interface instead of Record<string, string>
 declare global {
   interface ImportMeta {
-    env: Record<string, string>;
+    readonly env: ImportMetaEnv;
+  }
+  interface ImportMetaEnv {
+    readonly VITE_API_URL: string;
+    readonly VITE_BACKEND_URL: string;
+    readonly VITE_SOCKET_URL: string;
+    PROD: boolean;
+    DEV: boolean;
+    // Add other env variables as needed
   }
 }
 
 // In production with relative URL, we need to prepend /api
 const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-export const API_BASE_URL = rawBaseUrl === '/' ? '/api' : `${rawBaseUrl}/api`;
+export const API_BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl}/api`;
 
 // Extract the base server URL (without /api)
 export const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');

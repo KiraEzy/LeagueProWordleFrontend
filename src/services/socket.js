@@ -6,10 +6,10 @@ export const getSocket = () => {
   if (!socket) {
     // Get the API URL from environment or default
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-    // In production with relative URL, use the current domain
-    const API_URL = apiUrl === '/' ? window.location.origin : apiUrl;
-
+    
+    // Use API URL as is since we're now providing the full URL in .env.production
+    const API_URL = apiUrl;
+    
     socket = io(API_URL, {
       transports: ['websocket'],
       autoConnect: true,

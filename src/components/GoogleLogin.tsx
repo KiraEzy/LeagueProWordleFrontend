@@ -7,8 +7,8 @@ import './GoogleLogin.css';
 // Get base URL from environment or default
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-// In production with relative URL, use the current domain
-const API_BASE_URL = apiBaseUrl === '/' ? '/api' : `${apiBaseUrl}/api`;
+// Use API URL as is with /api suffix if needed
+const API_BASE_URL = apiBaseUrl.endsWith('/api') ? apiBaseUrl : `${apiBaseUrl}/api`;
 
 // Extract the base server URL (without /api)
 const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');
