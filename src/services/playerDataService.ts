@@ -1,4 +1,4 @@
-import { getAllPlayers } from './api';
+import { getAllPlayers as getOfflinePlayers } from './offlinePlayerService';
 
 interface BackendPlayer {
   id: number;
@@ -38,23 +38,24 @@ export interface WorldsPlayersJson {
 }
 
 /**
- * Fetch all players from the backend API and transform them to match
+ * Fetch all players from the offline data and transform them to match
  * the exact format required by the frontend
  */
 export async function fetchAndFormatPlayers(): Promise<WorldsPlayersJson> {
   try {
-    const backendPlayers = await getAllPlayers();
+    // Use the offline data service instead of the API
+    const backendPlayers = await getOfflinePlayers();
     
-    // Check if the API returned valid data
+    // Check if the data is valid
     if (!backendPlayers || !Array.isArray(backendPlayers) || backendPlayers.length === 0) {
-      throw new Error('API returned empty or invalid player data');
+      throw new Error('Offline data is empty or invalid');
     }
     
     return transformPlayersData(backendPlayers);
   } catch (error) {
-    console.error('Error fetching players from API:', error);
+    console.error('Error fetching players from offline data:', error);
     throw new Error(
-      `Failed to fetch player data from the server: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to fetch player data: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 }
@@ -67,7 +68,7 @@ function transformPlayersData(players: BackendPlayer[]): WorldsPlayersJson {
   
   // Log the first player for debugging purposes
   if (players.length > 0 && import.meta.env.DEV) {
-    console.log('Sample player data from API:', players[0]);
+    console.log('Sample player data from offline source:', players[0]);
   }
 
   players.forEach(player => {

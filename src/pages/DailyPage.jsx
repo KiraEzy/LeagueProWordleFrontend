@@ -9,7 +9,7 @@ const { Title, Text, Paragraph } = Typography;
 // Import the player data service instead of the JSON file
 import { fetchAndFormatPlayers } from '../services/playerDataService';
 // Import API functions for daily game
-import { getDailyGameData, submitGuess, getAllPlayers, getDebugDailyAnswer } from '../services/api';
+import { getDailyChallenge, submitGuess, getAllPlayers, getDebugDailyAnswer } from '../services/api';
 // Import session service for anonymous ID
 import { getOrCreateAnonymousId } from '../services/sessionService';
 // Import appearance settings component
@@ -99,7 +99,7 @@ function DailyPage() {
         setLoading(true);
         
         // Get complete daily game data from the backend - includes all previous guesses and stats
-        const completeData = await getDailyGameData();
+        const completeData = await getDailyChallenge();
         
         // Log the complete data structure for debugging
         console.log('Received daily game data:', completeData);
@@ -277,7 +277,7 @@ function DailyPage() {
       // Update game stats if needed
       if (feedback.correct || updatedGuesses.length >= MAX_GUESSES) {
         try {
-          const completeData = await getDailyGameData();
+          const completeData = await getDailyChallenge();
           setGameStats({
             gamesPlayed: completeData.stats.gamesPlayed,
             gamesWon: completeData.stats.gamesWon,

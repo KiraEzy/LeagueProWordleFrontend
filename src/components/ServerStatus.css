@@ -18,6 +18,11 @@
   background-color: rgba(211, 47, 47, 0.1);
 }
 
+.server-status.offline-mode {
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
 .status-indicator {
   width: 8px;
   height: 8px;
@@ -34,6 +39,11 @@
 .status-indicator.offline {
   background-color: #d32f2f;
   box-shadow: 0 0 5px #d32f2f;
+}
+
+.status-indicator.offline-mode {
+  background-color: #ff9800;
+  box-shadow: 0 0 5px #ff9800;
 }
 
 .status-details {

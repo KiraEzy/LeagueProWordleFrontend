@@ -1,5 +1,7 @@
 // API service for communicating with the backend
+// Modified to use offline data when backend is not available
 import { getOrCreateAnonymousId, getAuthToken } from './sessionService';
+import * as offlineService from './offlinePlayerService';
 
 // Use the proper ImportMetaEnv interface instead of Record<string, string>
 declare global {
@@ -23,6 +25,9 @@ export const API_BASE_URL = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBas
 // Extract the base server URL (without /api)
 export const SERVER_URL = API_BASE_URL.replace(/\/api$/, '');
 
+// Force offline mode for all API calls
+const OFFLINE_MODE = true;
+
 // API endpoints
 export const ENDPOINTS = {
   DAILY_GAME: '/game/daily',
@@ -36,6 +41,11 @@ export const ENDPOINTS = {
   DEBUG_DAILY_ANSWER: '/game/debug/answer', // Debug-only endpoint
   DAILY_GAME_COMPLETE: '/game/daily/complete'
 };
+
+// Helper to detect if we're in offline mode
+function isOfflineMode(): boolean {
+  return OFFLINE_MODE;
+}
 
 /**
  * Helper to create request headers with authorization/session information
@@ -86,33 +96,36 @@ function getHeaders(includeContentType = false): HeadersInit {
 /**
  * Check if the server is online
  */
-export async function checkServerStatus() {
+export const checkServerStatus = async (): Promise<boolean> => {
+  if (isOfflineMode()) {
+    console.log('Server status check: Running in offline mode');
+    return false;
+  }
+  
   try {
-    const response = await fetch(`${SERVER_URL}${ENDPOINTS.HEALTH}`, {
-      method: 'GET',
-      headers: getHeaders()
-    });
-    
-    if (!response.ok) {
-      return { online: false, error: response.statusText };
-    }
-    
-    const data = await response.json();
-    return { 
-      online: data.status === 'online',
-      timestamp: data.timestamp,
-      message: data.message
-    };
+    const response = await fetch(`${API_BASE_URL.replace(/\/api$/, '')}/health`);
+    return response.ok;
   } catch (error) {
     console.error('Failed to check server status:', error);
-    return { online: false, error: error.message };
+    return false;
   }
-}
+};
 
 /**
  * Check if the database connection is working
  */
 export async function checkDatabaseStatus() {
+  if (isOfflineMode()) {
+    console.log('Database status check: Running in offline mode');
+    return { 
+      online: false, 
+      dbConnected: false, 
+      error: 'Running in offline mode', 
+      timestamp: new Date().toISOString(),
+      dbTimestamp: null
+    };
+  }
+  
   try {
     const response = await fetch(`${SERVER_URL}${ENDPOINTS.HEALTH_DB}`, {
       method: 'GET',
@@ -140,6 +153,11 @@ export async function checkDatabaseStatus() {
  * Get today's game information
  */
 export async function getDailyGame() {
+  if (isOfflineMode()) {
+    console.log('Getting daily game: Running in offline mode');
+    return offlineService.getDailyChallenge();
+  }
+  
   try {
     const response = await fetch(`${API_BASE_URL}${ENDPOINTS.DAILY_GAME}`, {
       method: 'GET',
@@ -159,76 +177,71 @@ export async function getDailyGame() {
 }
 
 /**
- * Submit a player guess
- * @param playerId The ID of the player being guessed
+ * Submit a guess for the daily challenge
  */
-export async function submitGuess(playerId: number) {
+export const submitGuess = async (playerName: string) => {
+  if (isOfflineMode()) {
+    console.log('Submitting guess offline:', playerName);
+    return offlineService.submitDailyGuess(playerName);
+  }
+  
   try {
-    console.log(`Submitting guess for player ID: ${playerId}`);
-    
-    if (!playerId || isNaN(playerId)) {
-      throw new Error('Invalid player ID');
-    }
-    
-    const url = `${API_BASE_URL}${ENDPOINTS.SUBMIT_GUESS}`;
-    console.log(`Submitting to URL: ${url}`);
-    
-    const headers = getHeaders(true);
-    console.log('Request headers:', headers);
-    
-    const response = await fetch(url, {
+    const sessionId = getOrCreateAnonymousId();
+    const response = await fetch(`${API_BASE_URL}/game/guess`, {
       method: 'POST',
-      headers: headers,
-      credentials: 'include', // For cookie-based sessions
-      body: JSON.stringify({ playerId })
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-ID': sessionId
+      },
+      body: JSON.stringify({ playerName })
     });
-    
-    if (!response.ok) {
-      let errorMessage = `Error submitting guess: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        // If we can't parse the error JSON, use the default message
-      }
-      throw new Error(errorMessage);
-    }
-    
-    const result = await response.json();
-    console.log('Guess submission result:', result);
-    return result;
+    return handleApiResponse(response);
   } catch (error) {
     console.error('Failed to submit guess:', error);
     throw error;
   }
-}
+};
 
 /**
  * Get list of all players
  */
-export async function getAllPlayers() {
+export const getAllPlayers = async () => {
+  if (isOfflineMode()) {
+    console.log('Getting all players: Running in offline mode');
+    return offlineService.getAllPlayers();
+  }
+  
   try {
-    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.PLAYER_LIST}`, {
-      method: 'GET',
-      headers: getHeaders(),
-      credentials: 'include' // For cookie-based sessions
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Error fetching players: ${response.statusText}`);
-    }
-    
-    return await response.json();
+    const response = await fetch(`${API_BASE_URL}/game/players`);
+    return handleApiResponse(response);
   } catch (error) {
     console.error('Failed to fetch players:', error);
     throw error;
   }
-}
+};
 
 /**
  * Get user game statistics
  */
 export async function getUserStats() {
+  if (isOfflineMode()) {
+    console.log('Getting user stats: Running in offline mode');
+    // Get stats from localStorage
+    const statsJson = localStorage.getItem('leagueProWordleDailyStats');
+    if (statsJson) {
+      return JSON.parse(statsJson);
+    }
+    
+    // Return default stats
+    return {
+      gamesPlayed: 0,
+      gamesWon: 0,
+      currentStreak: 0,
+      maxStreak: 0,
+      winPercentage: 0
+    };
+  }
+  
   try {
     const response = await fetch(`${API_BASE_URL}${ENDPOINTS.USER_STATS}`, {
       method: 'GET',
@@ -251,6 +264,14 @@ export async function getUserStats() {
  * Register an anonymous user, converting them to a registered user
  */
 export async function registerUser(username: string, email?: string) {
+  if (isOfflineMode()) {
+    console.log('Registering user offline:', username);
+    // Simulate registration in localStorage
+    localStorage.setItem('username', username);
+    localStorage.setItem('auth_token', 'offline-token');
+    return { token: 'offline-token', username };
+  }
+  
   try {
     const response = await fetch(`${API_BASE_URL}${ENDPOINTS.REGISTER}`, {
       method: 'POST',
@@ -276,6 +297,12 @@ export async function registerUser(username: string, email?: string) {
  * This will redirect the user to the Google login page
  */
 export function initiateGoogleLogin() {
+  if (isOfflineMode()) {
+    console.log('Google login not available in offline mode');
+    alert('Google login is not available when running offline.');
+    return;
+  }
+  
   window.location.href = `${SERVER_URL}/auth/google`;
 }
 
@@ -284,6 +311,10 @@ export function initiateGoogleLogin() {
  * Extracts token and username from URL parameters and returns them
  */
 export function handleGoogleLoginCallback(): { token: string | null, username: string | null, error: string | null } {
+  if (isOfflineMode()) {
+    return { token: null, username: null, error: 'Offline mode active' };
+  }
+  
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token');
   const username = urlParams.get('username');
@@ -293,103 +324,75 @@ export function handleGoogleLoginCallback(): { token: string | null, username: s
 }
 
 /**
- * DEVELOPMENT ONLY: Get the daily answer for debugging
- * This should never be called in production mode
+ * Get debug daily answer (only in development mode)
  */
-export async function getDebugDailyAnswer() {
-  // Only allow in development mode
+export const getDebugDailyAnswer = async () => {
+  if (isOfflineMode()) {
+    console.log('Getting debug daily answer: Running in offline mode');
+    return offlineService.getDebugDailyAnswer();
+  }
+  
   if (import.meta.env.PROD) {
-    console.error('Debug endpoints cannot be called in production');
+    console.warn('Debug endpoint accessed in production');
     return null;
   }
   
   try {
-    const response = await fetch(`${API_BASE_URL}${ENDPOINTS.DEBUG_DAILY_ANSWER}`, {
-      method: 'GET',
-      headers: getHeaders(),
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Error fetching debug answer: ${response.statusText}`);
-    }
-    
-    return await response.json();
+    const response = await fetch(`${API_BASE_URL}/game/debug/answer`);
+    return handleApiResponse(response);
   } catch (error) {
     console.error('Failed to fetch debug answer:', error);
     return null;
   }
-}
+};
 
 /**
  * Fetch all daily game data including stats, guesses, and game status
  * @returns Complete daily game data including previous guesses and stats
  */
-export async function getDailyGameData() {
-  // Build headers with auth token and/or session ID
-  const headers = {};
-  const token = localStorage.getItem('auth_token');
-  const sessionId = localStorage.getItem('anonymous_user_id');
-  
-  console.log('getDailyGameData - Starting request');
-  console.log('Token available:', !!token);
-  console.log('Session ID available:', !!sessionId);
-  
-  // Add auth token if available
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  // Add session ID if available
-  if (sessionId) {
-    headers['X-Session-ID'] = sessionId;
-    console.log('Using session ID:', sessionId);
+export const getDailyChallenge = async () => {
+  if (isOfflineMode()) {
+    console.log('Getting daily challenge: Running in offline mode');
+    return offlineService.getDailyChallenge();
   }
   
   try {
-    const fullUrl = `${API_BASE_URL}${ENDPOINTS.DAILY_GAME_COMPLETE}`;
-    console.log('Making request to:', fullUrl);
-    console.log('With headers:', headers);
-    
-    // Make the request
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers,
-      credentials: 'include'
-    });
-    
-    console.log('Got response status:', response.status);
-    console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
-    
-    // Check for a new session ID from the server
-    const newSessionId = response.headers.get('X-Session-ID');
-    if (newSessionId && !token) {
-      localStorage.setItem('anonymous_user_id', newSessionId);
-      console.log('Saved new session ID from server:', newSessionId);
-    }
-    
-    // Handle errors
-    if (!response.ok) {
-      let errorMessage = `Failed to fetch daily game data: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        console.error('Error response data:', errorData);
-        if (errorData && errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (e) {
-        // Use default error message if JSON parsing fails
-        console.error('Failed to parse error response as JSON:', e);
+    const sessionId = getOrCreateAnonymousId();
+    const response = await fetch(`${API_BASE_URL}/game/daily/complete`, {
+      headers: {
+        'X-Session-ID': sessionId
       }
-      throw new Error(errorMessage);
-    }
-    
-    // Parse and return the data
-    const data = await response.json();
-    console.log('Successfully got daily game data:', data);
-    return data;
+    });
+    return handleApiResponse(response);
   } catch (error) {
-    console.error('Error fetching daily game data:', error);
+    console.error('Failed to fetch daily challenge:', error);
     throw error;
   }
-} 
+};
+
+// Function to handle API response
+const handleApiResponse = async (response: Response) => {
+  // Check if response is OK (status code 200-299)
+  if (!response.ok) {
+    // Try to parse error response
+    try {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `API error (${response.status})`);
+    } catch (jsonError) {
+      // If we can't parse JSON, use the status text
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
+  }
+  
+  // Check for empty response
+  const text = await response.text();
+  if (!text) return null;
+  
+  // Try to parse as JSON
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Invalid JSON response:', text.substring(0, 100) + '...');
+    throw new Error('Invalid response format from server');
+  }
+}; 

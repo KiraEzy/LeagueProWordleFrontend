@@ -6,6 +6,9 @@ interface ServerStatusProps {
   showDetails?: boolean;
 }
 
+// Define an offline mode constant
+const OFFLINE_MODE = true;
+
 const ServerStatus: React.FC<ServerStatusProps> = ({ showDetails = false }) => {
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
   const [dbConnected, setDbConnected] = useState<boolean | null>(null);
@@ -16,16 +19,26 @@ const ServerStatus: React.FC<ServerStatusProps> = ({ showDetails = false }) => {
     const checkStatus = async () => {
       try {
         setLoading(true);
+        
+        if (OFFLINE_MODE) {
+          // In offline mode, show a specific message
+          setServerOnline(false);
+          setDbConnected(false);
+          setError('离线模式 - 使用本地数据');
+          setLoading(false);
+          return;
+        }
+        
         // Check server status
         const serverStatus = await checkServerStatus();
-        setServerOnline(serverStatus.online);
+        setServerOnline(serverStatus);
         
-        if (serverStatus.online) {
+        if (serverStatus) {
           // If server is online, check database
           const dbStatus = await checkDatabaseStatus();
           setDbConnected(dbStatus.dbConnected);
         } else {
-          setError(serverStatus.error || '服务器离线');
+          setError('服务器离线');
           setDbConnected(false);
         }
       } catch (err) {
@@ -40,15 +53,32 @@ const ServerStatus: React.FC<ServerStatusProps> = ({ showDetails = false }) => {
     // Check status immediately
     checkStatus();
     
-    // Then check every 30 seconds
-    const interval = setInterval(checkStatus, 30000);
+    // Then check every 30 seconds if not in offline mode
+    let interval: number | null = null;
+    if (!OFFLINE_MODE) {
+      interval = window.setInterval(checkStatus, 30000);
+    }
     
     // Cleanup
-    return () => clearInterval(interval);
+    return () => {
+      if (interval !== null) {
+        clearInterval(interval);
+      }
+    };
   }, []);
 
   if (loading) {
     return <div className="server-status loading">检查服务器状态中...</div>;
+  }
+
+  if (OFFLINE_MODE) {
+    return (
+      <div className="server-status offline-mode">
+        <span className="status-indicator offline-mode"></span>
+        离线模式 - 使用本地数据
+        {showDetails && <div className="status-details">使用本地 JSON 数据文件</div>}
+      </div>
+    );
   }
 
   if (!serverOnline) {

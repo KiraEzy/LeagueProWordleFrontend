@@ -138,7 +138,8 @@ function App() {
           <header className="header">
             <div className="logo-container">
               <Link to="/" onClick={closeMobileMenu}>
-                <h1>英雄联盟猜词</h1>
+                <h1>英雄联盟猜选手</h1>
+                <span className="offline-badge">离线模式</span>
               </Link>
             </div>
             
