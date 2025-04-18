@@ -4,15 +4,7 @@ import './AboutPage.css';
 function AboutPage() {
   return (
     <div className="about-page">
-      <h1>关于英雄联盟猜词</h1>
-      
-      <div className="about-section">
-        <h2>什么是英雄联盟猜词？</h2>
-        <p>
-          英雄联盟猜词是一款受Wordle启发的猜词游戏，但加入了英雄联盟电竞元素。
-          不同于猜测随机单词，您将猜测曾经参加过世界总决赛的英雄联盟职业选手的名字。
-        </p>
-      </div>
+      <h1>关于英雄联盟猜选手</h1>
       
       <div className="about-section">
         <h2>如何游玩</h2>
@@ -30,14 +22,6 @@ function AboutPage() {
           <li>地区</li>
           <li>世界赛出场次数</li>
         </ul>
-      </div>
-      
-      <div className="about-section">
-        <h2>我们的故事</h2>
-        <p>
-          英雄联盟猜词由一群热爱英雄联盟电竞的粉丝创建，目的是提供一种有趣的方式来测试对职业赛事的了解。
-          游戏于2024年推出，并不断增加新功能和玩家。
-        </p>
       </div>
       
       <div className="about-section">
