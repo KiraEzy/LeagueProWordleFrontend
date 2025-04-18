@@ -31,7 +31,7 @@ function Hero() {
   return (
     <section className="hero">
       <div className="hero-content">
-        <h1>英雄联盟猜词</h1>
+        <h1>英雄联盟猜选手</h1>
         <p className="hero-subtitle">
           考验您对参加过世界赛的英雄联盟职业选手的认知
         </p>
