@@ -101,10 +101,43 @@ const nationalityTranslations = {
   "Venezuela": "委内瑞拉"
 };
 
+// Function to calculate age from birthdate
+const calculateAge = (birthdate) => {
+  if (!birthdate) return null;
+  
+  // Parse the birthdate string (could be in YYYY-MM-DD format)
+  const birthdateObj = new Date(birthdate);
+  if (isNaN(birthdateObj.getTime())) return null; // Invalid date
+  
+  // Calculate age
+  const today = new Date();
+  let age = today.getFullYear() - birthdateObj.getFullYear();
+  const monthDiff = today.getMonth() - birthdateObj.getMonth();
+  
+  // Adjust age if birthday hasn't occurred yet this year
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdateObj.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
+
 // Function to translate nationality
 const translateNationality = (nationality) => {
   if (!nationality) return "未知";
   return nationalityTranslations[nationality] || nationality;
+};
+
+// Compare age function - returns feedback for the age column
+const compareAge = (guessedAge, targetAge) => {
+  if (guessedAge === null || targetAge === null) return 'incorrect';
+  
+  if (guessedAge === targetAge) return 'correct';
+  
+  // Within +/- 1 year is considered close
+  if (Math.abs(guessedAge - targetAge) <= 1) return 'close';
+  
+  return 'incorrect';
 };
 
 function SinglePlayerPage() {
@@ -318,6 +351,11 @@ function SinglePlayerPage() {
       targetPlayer
     );
     
+    // Calculate ages
+    const guessedAge = calculateAge(guessedPlayer.birthdate);
+    const targetAge = calculateAge(targetPlayer.birthdate);
+    const ageFeedback = compareAge(guessedAge, targetAge);
+    
     const roleFeedback = compareAttribute('tournament_role', guessedPlayer, targetPlayer);
     const nationalityFeedback = compareNationality(guessedPlayer, targetPlayer);
     const appearanceFeedback = compareWorldAppearances(
@@ -331,6 +369,7 @@ function SinglePlayerPage() {
       correct: isCorrect,
       hints: {
         team: teamFeedback,
+        age: ageFeedback,
         role: roleFeedback,
         nationality: nationalityFeedback,
         worldAppearances: appearanceFeedback
@@ -597,6 +636,12 @@ function SinglePlayerPage() {
             </Tooltip>
           </div>
           <div className="attribute-header">
+            年龄
+            <Tooltip title="完全匹配年龄（绿色），相差1岁（橙色）">
+              <QuestionCircleOutlined className="header-icon" />
+            </Tooltip>
+          </div>
+          <div className="attribute-header">
             位置
             <Tooltip title="在世界赛上的位置（可能与当前位置不同）">
               <QuestionCircleOutlined className="header-icon" />
@@ -624,6 +669,9 @@ function SinglePlayerPage() {
             <div className={`guess-cell ${guess.hints.team}`}>
               {allPlayers[guess.name]?.formattedTeam || '?'}
             </div>
+            <div className={`guess-cell ${guess.hints.age}`}>
+              {calculateAge(allPlayers[guess.name]?.birthdate) || '?'}
+            </div>
             <div className={`guess-cell ${guess.hints.role}`}>
               {allPlayers[guess.name]?.tournament_role || '?'}
             </div>
@@ -639,6 +687,7 @@ function SinglePlayerPage() {
         {/* Empty rows for remaining guesses */}
         {Array.from({ length: MAX_GUESSES - guesses.length }).map((_, index) => (
           <div key={`empty-${index}`} className="guess-row empty">
+            <div className="guess-cell"></div>
             <div className="guess-cell"></div>
             <div className="guess-cell"></div>
             <div className="guess-cell"></div>
@@ -735,6 +784,7 @@ function SinglePlayerPage() {
         <div>
           <p><strong>选手名称:</strong> {targetPlayer?.name || '未知'}</p>
           <p><strong>战队:</strong> {targetPlayer?.formattedTeam || '未知'}</p>
+          <p><strong>年龄:</strong> {calculateAge(targetPlayer?.birthdate) || '未知'}</p>
           <p><strong>位置:</strong> {targetPlayer?.tournament_role || '未知'}</p>
           <p><strong>地区:</strong> {translateNationality(targetPlayer?.nationality) || '未知'}</p>
           <p><strong>世界赛/MSI次数:</strong> {targetPlayer?.appearance || targetPlayer?.worldAppearances || '未知'}</p>

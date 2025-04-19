@@ -83,16 +83,18 @@
 }
 
 .game-board {
-  border: 1px solid #E5E7EB;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 20px;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .guess-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
   background-color: #0A1428;
   color: white;
   font-weight: 600;
@@ -119,7 +121,7 @@
 
 .guess-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
   border-bottom: 1px solid #E5E7EB;
 }
 
@@ -128,14 +130,18 @@
 }
 
 .guess-cell {
-  padding: 15px;
+  flex: 1;
+  padding: 8px 4px;
   text-align: center;
-  border-right: 1px solid #E5E7EB;
+  border-right: 1px solid #d9d9d9;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60px;
-  transition: all 0.3s ease;
+  min-height: 48px;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .guess-cell:last-child {
@@ -244,7 +250,7 @@
   }
   
   .guess-header, .guess-row {
-    grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr;
   }
   
   .attribute-header, .guess-cell {
@@ -269,12 +275,14 @@
   }
   
   .guess-header, .guess-row {
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr;
     font-size: 12px;
   }
   
   .attribute-header, .guess-cell {
-    padding: 8px 4px;
+    padding: 8px 2px;
     min-height: 50px;
+    font-size: 12px;
   }
   
   .game-controls {

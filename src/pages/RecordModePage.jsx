@@ -107,6 +107,70 @@ const translateNationality = (nationality) => {
   return nationalityTranslations[nationality] || nationality;
 };
 
+// Function to calculate age from birthdate
+const calculateAge = (birthdate) => {
+  if (!birthdate) return null;
+  
+  // Try to parse the date in different formats
+  let birthdateObj;
+  if (typeof birthdate === 'string') {
+    // Try ISO format (YYYY-MM-DD)
+    birthdateObj = new Date(birthdate);
+    
+    // If invalid, try DD/MM/YYYY format
+    if (isNaN(birthdateObj.getTime())) {
+      const parts = birthdate.split(/[\/\-\.]/);
+      if (parts.length === 3) {
+        // Try different date formats (MM/DD/YYYY, DD/MM/YYYY)
+        birthdateObj = new Date(parts[2], parts[1] - 1, parts[0]); 
+        
+        // If still invalid, try MM/DD/YYYY
+        if (isNaN(birthdateObj.getTime())) {
+          birthdateObj = new Date(parts[2], parts[0] - 1, parts[1]);
+        }
+      }
+    }
+  }
+  
+  // If we couldn't parse the date or it's still invalid, return null
+  if (!birthdateObj || isNaN(birthdateObj.getTime())) {
+    return null;
+  }
+  
+  // Calculate age
+  const today = new Date();
+  let age = today.getFullYear() - birthdateObj.getFullYear();
+  const monthDiff = today.getMonth() - birthdateObj.getMonth();
+  
+  // Adjust age if birthday hasn't occurred yet this year
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdateObj.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
+
+// Function to compare ages
+const compareAge = (guessedBirthdate, targetBirthdate) => {
+  if (!guessedBirthdate || !targetBirthdate) return 'unknown';
+  
+  const guessedDate = new Date(guessedBirthdate);
+  const targetDate = new Date(targetBirthdate);
+  
+  if (isNaN(guessedDate) || isNaN(targetDate)) return 'unknown';
+  
+  const guessedAge = calculateAge(guessedDate);
+  const targetAge = calculateAge(targetDate);
+  
+  if (guessedAge === targetAge) {
+    return 'correct';
+  } else if (Math.abs(guessedAge - targetAge) <= 2) {
+    return 'close';
+  } else {
+    return 'incorrect';
+  }
+};
+
 function RecordModePage() {
   const [loading, setLoading] = useState(true);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -253,60 +317,64 @@ function RecordModePage() {
   };
 
   const handleSubmitGuess = () => {
-    if (!currentGuess.trim()) {
-      message.warning('Please enter a player name');
+    // Validate current guess
+    if (!currentGuess || !currentGuess.trim()) {
+      message.error('请输入选手名称');
       return;
     }
 
-    // Check if the guessed player exists in our data
-    // First, try to find by exact name match
-    let mainPlayerName = Object.keys(allPlayers).find(
-      name => name.toLowerCase() === currentGuess.toLowerCase()
-    );
-    
-    // If not found by exact name, check if it's an alternate name
-    if (!mainPlayerName) {
-      mainPlayerName = nameToMainNameMap[currentGuess.toLowerCase()];
-    }
-
-    if (!mainPlayerName) {
-      message.warning('Player not found. Please enter a valid player name.');
+    // Check if the player exists in our playerEntries
+    const mainName = nameToMainNameMap[currentGuess.toLowerCase()];
+    if (!mainName || !allPlayers[mainName]) {
+      message.error('未找到该选手，请检查拼写或选择下拉列表中的选手');
       return;
     }
 
-    const guessedPlayer = allPlayers[mainPlayerName];
-    
-    // Compare attributes with target player
-    const newGuess = {
-      name: mainPlayerName,
-      correct: mainPlayerName.toLowerCase() === targetPlayer.mainName.toLowerCase(),
+    // Get the guessed player data
+    const guessedPlayer = allPlayers[mainName];
+
+    // Check if this player was already guessed
+    if (guesses.some(g => g.name.toLowerCase() === mainName.toLowerCase())) {
+      message.warning('您已经猜过这个选手了');
+      return;
+    }
+
+    // Prepare feedback with comparisons
+    const feedback = {
+      name: mainName,
+      correct: mainName.toLowerCase() === targetPlayer.mainName.toLowerCase(),
       hints: {
-        team: compareTeams(guessedPlayer.formattedTeam, targetPlayer.formattedTeam, guessedPlayer, targetPlayer),
-        role: compareAttribute('tournament_role', guessedPlayer, targetPlayer),
-        nationality: compareNationality(guessedPlayer, targetPlayer),
-        worldAppearances: compareWorldAppearances(guessedPlayer.appearance, targetPlayer.worldAppearances),
+        team: compareTeams(guessedPlayer.formattedTeam, targetPlayer.formattedTeam),
+        role: compareAttribute(guessedPlayer.tournament_role, targetPlayer.tournament_role),
+        nationality: compareNationality(guessedPlayer.nationality, targetPlayer.nationality),
+        worldAppearances: compareWorldAppearances(
+          guessedPlayer.worldAppearances || guessedPlayer.appearance, 
+          targetPlayer.worldAppearances || targetPlayer.appearance
+        ),
+        age: compareAge(guessedPlayer.birthdate, targetPlayer.birthdate)
       }
     };
 
-    const updatedGuesses = [...guesses, newGuess];
-    setGuesses(updatedGuesses);
+    // Update guesses state
+    const newGuesses = [...guesses, feedback];
+    setGuesses(newGuesses);
     setCurrentGuess('');
 
-    // Check win condition
-    if (newGuess.correct) {
+    // Check if the game is won
+    if (feedback.correct) {
       setGameStatus('won');
-      updateStats(true, updatedGuesses.length);
-      message.success(`Correct! You guessed ${targetPlayer.mainName} in ${updatedGuesses.length} attempts.`);
-    } 
-    // Check lose condition
-    else if (updatedGuesses.length >= MAX_GUESSES) {
+      updateStats(true, newGuesses.length);
+      return;
+    }
+
+    // Check if the game is lost (max attempts reached)
+    if (newGuesses.length >= MAX_GUESSES) {
       setGameStatus('lost');
       updateStats(false);
-      message.error(`Game over! The player was ${targetPlayer.mainName}.`);
     }
   };
 
-  const compareTeams = (guessedTeam, targetTeam, guessedPlayer, targetPlayer) => {
+  const compareTeams = (guessedTeam, targetTeam) => {
     if (!guessedTeam || !targetTeam) {
       return 'incorrect';
     }
@@ -322,8 +390,7 @@ function RecordModePage() {
     }
     
     // If neither is retired and they are from the same region, return close
-    if (guessedTeam !== 'Retired' && targetTeam !== 'Retired' &&
-        guessedPlayer.current_team_region && targetPlayer.current_team_region &&
+    if (guessedPlayer.current_team_region && targetPlayer.current_team_region &&
         guessedPlayer.current_team_region.toLowerCase() === targetPlayer.current_team_region.toLowerCase()) {
       return 'close';
     }
@@ -332,34 +399,23 @@ function RecordModePage() {
     return 'incorrect';
   };
 
-  const compareAttribute = (attribute, guessedPlayer, targetPlayer) => {
-    if (!guessedPlayer[attribute] || !targetPlayer[attribute]) {
+  const compareAttribute = (guessedAttribute, targetAttribute) => {
+    if (!guessedAttribute || !targetAttribute) {
       return 'incorrect';
     }
     
-    return guessedPlayer[attribute]?.toLowerCase() === targetPlayer[attribute]?.toLowerCase() 
+    return guessedAttribute.toLowerCase() === targetAttribute.toLowerCase() 
       ? 'correct' 
       : 'incorrect';
   };
 
-  const compareNationality = (guessedPlayer, targetPlayer) => {
+  const compareNationality = (guessedNationality, targetNationality) => {
     // If nationality is exactly the same, return correct
-    if (guessedPlayer.nationality?.toLowerCase() === targetPlayer.nationality?.toLowerCase()) {
+    if (guessedNationality?.toLowerCase() === targetNationality?.toLowerCase()) {
       return 'correct';
     }
     
-    // Get residency values (handle both capitalization cases)
-    const guessedResidency = guessedPlayer.residency || guessedPlayer.Residency;
-    const targetResidency = targetPlayer.residency || targetPlayer.Residency;
-    
-    // If residency is the same but nationality is different, return close
-    if (guessedResidency && 
-        targetResidency && 
-        guessedResidency.toLowerCase() === targetResidency.toLowerCase()) {
-      return 'close';
-    }
-    
-    // Otherwise return incorrect
+    // If we get here, nationalities don't match
     return 'incorrect';
   };
 
@@ -507,6 +563,12 @@ function RecordModePage() {
             </Tooltip>
           </div>
           <div className="attribute-header">
+            年龄
+            <Tooltip title="完全匹配年龄（绿色），相差一年（橙色）">
+              <QuestionCircleOutlined className="header-icon" />
+            </Tooltip>
+          </div>
+          <div className="attribute-header">
             位置
             <Tooltip title="世界赛上的位置（可能与当前角色不同）">
               <QuestionCircleOutlined className="header-icon" />
@@ -535,6 +597,9 @@ function RecordModePage() {
               {guess.hints.team === 'correct' ? targetPlayer.formattedTeam : 
                allPlayers[guess.name]?.formattedTeam || '?'}
             </div>
+            <div className={`guess-cell ${guess.hints.age}`}>
+              {calculateAge(allPlayers[guess.name]?.birthdate) || '?'}
+            </div>
             <div className={`guess-cell ${guess.hints.role}`}>
               {guess.hints.role === 'correct' ? targetPlayer.tournament_role : 
                allPlayers[guess.name]?.tournament_role || '?'}
@@ -552,6 +617,7 @@ function RecordModePage() {
         {/* Empty rows for remaining guesses */}
         {Array.from({ length: MAX_GUESSES - guesses.length }).map((_, index) => (
           <div key={`empty-${index}`} className="guess-row empty">
+            <div className="guess-cell"></div>
             <div className="guess-cell"></div>
             <div className="guess-cell"></div>
             <div className="guess-cell"></div>

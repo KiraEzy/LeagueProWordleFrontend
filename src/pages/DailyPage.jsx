@@ -351,6 +351,10 @@ function DailyPage() {
             <span className="property-value">{guess.team?.value || '未知'}</span>
             {renderHint('team', guess.hints)}
           </div>
+          <div className={`property ${guess.hints.age || 'unknown'}`}>
+            <span className="property-value">{guess.age?.value || '?'}</span>
+            {renderHint('age', guess.hints)}
+          </div>
           <div className={`property ${guess.hints.role}`}>
             <span className="property-value">{guess.role?.value || '未知'}</span>
             {renderHint('role', guess.hints)}
@@ -372,6 +376,9 @@ function DailyPage() {
       rows.push(
         <div key={`empty-${i}`} className="guess-row empty">
           <div className="player-name">???</div>
+          <div className="property">
+            <span className="property-value">?</span>
+          </div>
           <div className="property">
             <span className="property-value">?</span>
           </div>
@@ -552,6 +559,7 @@ function DailyPage() {
           <div className="header-row">
             <div className="header-cell">选手</div>
             <div className="header-cell">战队</div>
+            <div className="header-cell">年龄</div>
             <div className="header-cell">位置</div>
             <div className="header-cell">地区</div>
             <div className="header-cell">世界赛次数</div>
