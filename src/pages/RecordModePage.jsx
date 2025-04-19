@@ -279,7 +279,7 @@ function RecordModePage() {
     // Compare attributes with target player
     const newGuess = {
       name: mainPlayerName,
-      correct: mainPlayerName.toLowerCase() === targetPlayer.name.toLowerCase(),
+      correct: mainPlayerName.toLowerCase() === targetPlayer.mainName.toLowerCase(),
       hints: {
         team: compareTeams(guessedPlayer.formattedTeam, targetPlayer.formattedTeam, guessedPlayer, targetPlayer),
         role: compareAttribute('tournament_role', guessedPlayer, targetPlayer),
@@ -296,13 +296,13 @@ function RecordModePage() {
     if (newGuess.correct) {
       setGameStatus('won');
       updateStats(true, updatedGuesses.length);
-      message.success(`Correct! You guessed ${targetPlayer.name} in ${updatedGuesses.length} attempts.`);
+      message.success(`Correct! You guessed ${targetPlayer.mainName} in ${updatedGuesses.length} attempts.`);
     } 
     // Check lose condition
     else if (updatedGuesses.length >= MAX_GUESSES) {
       setGameStatus('lost');
       updateStats(false);
-      message.error(`Game over! The player was ${targetPlayer.name}.`);
+      message.error(`Game over! The player was ${targetPlayer.mainName}.`);
     }
   };
 
@@ -588,8 +588,8 @@ function RecordModePage() {
           </Title>
           <Text>
             {gameStatus === 'won' 
-              ? `您用了 ${guesses.length} 次尝试猜出了 ${targetPlayer.name}。`
-              : `正确答案是 ${targetPlayer.name}。`
+              ? `您用了 ${guesses.length} 次尝试猜出了 ${targetPlayer.mainName}。`
+              : `正确答案是 ${targetPlayer.mainName}。`
             }
           </Text>
           <Button type="primary" onClick={startNewGame}>
