@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Button, message, Spin, Typography, AutoComplete, Tooltip, Tag } from 'antd';
-import { QuestionCircleOutlined, BugOutlined } from '@ant-design/icons';
+import { Button, message, Spin, Typography, AutoComplete, Tooltip, Tag, Modal } from 'antd';
+import { QuestionCircleOutlined, BugOutlined, RedoOutlined, EyeOutlined } from '@ant-design/icons';
 import './SinglePlayerPage.css';
 
 const { Title, Text, Paragraph } = Typography;
 
 // Import the player data service instead of the JSON file
 import { fetchAndFormatPlayers } from '../services/playerDataService';
+// Import getRandomPlayer from offline service
+import { getRandomPlayer } from '../services/offlinePlayerService';
 // Import API functions
 import { getDailyGame, submitGuess } from '../services/api';
 // Import appearance settings component
@@ -124,6 +126,9 @@ function SinglePlayerPage() {
   const [nameToMainNameMap, setNameToMainNameMap] = useState({});
   // New state to track if there's an API error
   const [apiError, setApiError] = useState(false);
+  // State for modal visibility
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [answerModalVisible, setAnswerModalVisible] = useState(false);
 
   const MAX_GUESSES = 10;
 
@@ -217,13 +222,33 @@ function SinglePlayerPage() {
         // But for the SinglePlayer mode, we'll select a random player
         // This way we ensure consistent answers for daily mode but still allow
         // unlimited play in single player mode
-        const randomPlayer = getRandomPlayer(playerEntries);
-        setTargetPlayer(randomPlayer);
-        setApiError(false);
+        const randomPlayer = getRandomPlayer(playerEntries, 'practice');
         
-        if (DEBUG_MODE) {
-          console.log("Loaded player data with", playerEntries.length, "players");
+        // Ensure the target player has the right structure with mainName
+        if (randomPlayer) {
+          // Find the key (player name) that matches this player's data
+          const playerKey = playerEntries.find(([_, playerData]) => 
+            playerData === randomPlayer || 
+            (playerData.id && randomPlayer.id && playerData.id === randomPlayer.id)
+          )?.[0];
+          
+          // Set the target player with the proper name and mainName fields
+          setTargetPlayer({
+            ...randomPlayer,
+            name: playerKey || randomPlayer.name || randomPlayer.main_name || 'Unknown',
+            mainName: playerKey || randomPlayer.main_name || randomPlayer.name || 'Unknown'
+          });
+          
+          if (DEBUG_MODE) {
+            console.log("Loaded player data with", playerEntries.length, "players");
+            console.log("Initial target player:", playerKey || randomPlayer.name || randomPlayer.main_name);
+          }
+        } else {
+          console.error("Failed to generate initial target player");
+          message.error('无法生成目标选手，请刷新页面重试');
         }
+        
+        setApiError(false);
       } catch (error) {
         console.error("Error loading player data:", error);
         message.error("无法从服务器加载玩家数据。请检查您的网络连接并重试。");
@@ -240,100 +265,6 @@ function SinglePlayerPage() {
   useEffect(() => {
     localStorage.setItem('leagueProWordleStats', JSON.stringify(gameStats));
   }, [gameStats]);
-
-  const getRandomPlayer = (playerEntries) => {
-    // Group players by appearances for weighted selection
-    const appearanceGroups = {
-      '1-2': [], // 1-2 appearances (low weight)
-      '3-5': [], // 3-5 appearances (medium weight)
-      '6+': []   // 6+ appearances (high weight)
-    };
-    
-    // Categorize players by appearance count
-    playerEntries.forEach(([key, playerData]) => {
-      const appearances = playerData.appearance || 0;
-      
-      if (appearances >= 6) {
-        appearanceGroups['6+'].push([key, playerData]);
-      } else if (appearances >= 3) {
-        appearanceGroups['3-5'].push([key, playerData]);
-      } else {
-        appearanceGroups['1-2'].push([key, playerData]);
-      }
-    });
-    
-    // Log appearance distribution if in debug mode
-    if (DEBUG_MODE) {
-      console.log("Player appearance distribution:", {
-        "1-2 appearances": appearanceGroups['1-2'].length,
-        "3-5 appearances": appearanceGroups['3-5'].length,
-        "6+ appearances": appearanceGroups['6+'].length,
-        "Total players": playerEntries.length
-      });
-    }
-    
-    // Get saved weights from localStorage or use defaults
-    let weights = {
-      low: 10,   // 1-2 appearances (10%)
-      medium: 30, // 3-5 appearances (30%)
-      high: 60,   // 6+ appearances (60%)
-    };
-    
-    try {
-      const savedWeights = localStorage.getItem('leagueProWordleAppearanceWeights');
-      if (savedWeights) {
-        weights = JSON.parse(savedWeights);
-      }
-    } catch (e) {
-      console.error('Failed to parse saved weights:', e);
-    }
-    
-    // Calculate total weight
-    const totalWeight = weights.low + weights.medium + weights.high;
-    
-    // Pick a random weight value
-    const randomWeight = Math.random() * totalWeight;
-    
-    // Determine which group to pick from based on the weights
-    let selectedGroup;
-    if (randomWeight < weights.low) {
-      selectedGroup = appearanceGroups['1-2'];
-      if (DEBUG_MODE) console.log("Selected group: 1-2 appearances");
-    } else if (randomWeight < weights.low + weights.medium) {
-      selectedGroup = appearanceGroups['3-5'];
-      if (DEBUG_MODE) console.log("Selected group: 3-5 appearances");
-    } else {
-      selectedGroup = appearanceGroups['6+'];
-      if (DEBUG_MODE) console.log("Selected group: 6+ appearances");
-    }
-    
-    // If selected group is empty, fall back to any player
-    if (!selectedGroup.length) {
-      if (DEBUG_MODE) console.log("Selected group is empty, falling back to random player");
-      const allPlayers = [...appearanceGroups['1-2'], ...appearanceGroups['3-5'], ...appearanceGroups['6+']];
-      // Get a random player
-      const randomIndex = Math.floor(Math.random() * allPlayers.length);
-      return allPlayers[randomIndex][1];
-    }
-    
-    // Get a random player from the selected group
-    const randomIndex = Math.floor(Math.random() * selectedGroup.length);
-    const [key, selectedPlayer] = selectedGroup[randomIndex];
-    
-    if (DEBUG_MODE) {
-      console.log("Selected player:", key);
-      console.log("Player team:", selectedPlayer.formattedTeam);
-      console.log("Player role:", selectedPlayer.tournament_role);
-      console.log("Player nationality:", selectedPlayer.nationality);
-      console.log("Player appearances:", selectedPlayer.appearance);
-    }
-    
-    // Add the key (name) to the player object
-    return {
-      ...selectedPlayer,
-      name: key
-    };
-  };
 
   const handleInputChange = (value) => {
     setCurrentGuess(value);
@@ -369,7 +300,15 @@ function SinglePlayerPage() {
     const guessedPlayer = allPlayers[mainPlayerName];
     
     // Check if the guess is correct
-    const isCorrect = mainPlayerName.toLowerCase() === targetPlayer.mainName.toLowerCase();
+    const isCorrect = targetPlayer && mainPlayerName.toLowerCase() === (targetPlayer.mainName || targetPlayer.name || '').toLowerCase();
+    
+    if (DEBUG_MODE) {
+      console.log("Guess check:", {
+        guessedName: mainPlayerName.toLowerCase(),
+        targetName: targetPlayer?.mainName?.toLowerCase() || targetPlayer?.name?.toLowerCase(),
+        isCorrect
+      });
+    }
     
     // Compare attributes to provide feedback
     const teamFeedback = compareTeams(
@@ -517,13 +456,36 @@ function SinglePlayerPage() {
   // Start a new game
   const startNewGame = () => {
     setGuesses([]);
+    setCurrentGuess('');
     setGameStatus('playing');
     const playerEntries = Object.entries(formattedPlayers);
-    const newTarget = getRandomPlayer(playerEntries);
-    setTargetPlayer(newTarget);
+    const newTarget = getRandomPlayer(playerEntries, 'practice');
     
-    if (DEBUG_MODE) {
-      console.log("New game started with target:", newTarget.name);
+    // Ensure the target player has the right structure with mainName
+    if (newTarget) {
+      // Find the key (player name) that matches this player's data
+      const playerKey = playerEntries.find(([_, playerData]) => 
+        playerData === newTarget || 
+        (playerData.id && newTarget.id && playerData.id === newTarget.id)
+      )?.[0];
+      
+      // Set the target player with the proper name and mainName fields
+      const updatedTarget = {
+        ...newTarget,
+        name: playerKey || newTarget.name || newTarget.main_name || 'Unknown',
+        mainName: playerKey || newTarget.main_name || newTarget.name || 'Unknown'
+      };
+      
+      setTargetPlayer(updatedTarget);
+      
+      message.success('已重新生成目标选手！');
+      
+      if (DEBUG_MODE) {
+        console.log("New game started with target:", updatedTarget);
+      }
+    } else {
+      console.error("Failed to generate new target player");
+      message.error('无法生成新选手，请刷新页面重试');
     }
   };
 
@@ -537,6 +499,19 @@ function SinglePlayerPage() {
       // Check if any of the player's names match the input
       option.searchTerms.some(term => term.includes(lowerInput))
     );
+  };
+
+  // Handle showing answer
+  const handleShowAnswer = () => {
+    setConfirmModalVisible(true);
+  };
+
+  // Handle confirm showing answer
+  const handleConfirmShowAnswer = () => {
+    setConfirmModalVisible(false);
+    setGameStatus('lost');
+    updateStats(false);
+    setAnswerModalVisible(true);
   };
 
   if (loading) {
@@ -566,14 +541,31 @@ function SinglePlayerPage() {
     <div className="single-player-page">
       <div className="game-header">
         <Title level={2}>练习模式</Title>
-        {/* Always show answer regardless of debug mode */}
-        {/* <Tag color="blue" icon={<QuestionCircleOutlined />}>
-          当前答案: {targetPlayer?.name} ({targetPlayer?.formattedTeam}
-          {targetPlayer?.current_team_region ? ` - ${targetPlayer?.current_team_region}` : ''}, 
-          {targetPlayer?.tournament_role}, {translateNationality(targetPlayer?.nationality)}
-          {(targetPlayer?.residency || targetPlayer?.Residency) ? 
-            ` / ${targetPlayer?.residency || targetPlayer?.Residency}` : ''})
-        </Tag> */}
+        <div className="settings-row">
+          <AppearanceSettings gameMode="practice" />
+          <Button 
+            type="default" 
+            icon={<RedoOutlined />} 
+            onClick={startNewGame}
+            className="regenerate-button"
+          >
+            <Tooltip title="使用当前权重设置重新生成一名随机选手">
+              重新生成选手
+            </Tooltip>
+          </Button>
+          {gameStatus === 'playing' && (
+            <Button 
+              type="default" 
+              icon={<EyeOutlined />} 
+              onClick={handleShowAnswer}
+              className="show-answer-button"
+            >
+              <Tooltip title="注意：查看答案将被视为放弃本局游戏">
+                显示答案
+              </Tooltip>
+            </Button>
+          )}
+        </div>
         <div className="game-rules">
           <Paragraph>
             猜出曾参加过世界赛的英雄联盟职业选手，您有 <strong>{MAX_GUESSES}</strong> 次尝试机会。
@@ -716,6 +708,38 @@ function SinglePlayerPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <Modal
+        title="确认查看答案"
+        open={confirmModalVisible}
+        onOk={handleConfirmShowAnswer}
+        onCancel={() => setConfirmModalVisible(false)}
+        okText="继续查看"
+        cancelText="取消"
+      >
+        <p>查看答案将被视为放弃本局游戏。是否继续？</p>
+      </Modal>
+
+      <Modal
+        title="当前答案"
+        open={answerModalVisible}
+        onOk={() => setAnswerModalVisible(false)}
+        onCancel={() => setAnswerModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setAnswerModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+      >
+        <div>
+          <p><strong>选手名称:</strong> {targetPlayer?.name || '未知'}</p>
+          <p><strong>战队:</strong> {targetPlayer?.formattedTeam || '未知'}</p>
+          <p><strong>位置:</strong> {targetPlayer?.tournament_role || '未知'}</p>
+          <p><strong>地区:</strong> {translateNationality(targetPlayer?.nationality) || '未知'}</p>
+          <p><strong>世界赛/MSI次数:</strong> {targetPlayer?.appearance || targetPlayer?.worldAppearances || '未知'}</p>
+        </div>
+      </Modal>
     </div>
   );
 }

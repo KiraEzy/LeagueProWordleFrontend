@@ -366,3 +366,31 @@
   font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', 'Heiti SC', system-ui, sans-serif !important;
   opacity: 0.7;
 } 
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.regenerate-button, .show-answer-button {
+  display: flex;
+  align-items: center;
+}
+
+.regenerate-button:hover, .show-answer-button:hover {
+  opacity: 0.85;
+}
+
+.regenerate-button {
+  background-color: #faad14;
+  color: white;
+  border: none;
+}
+
+.show-answer-button {
+  background-color: #1890ff;
+  color: white;
+  border: none;
+} 

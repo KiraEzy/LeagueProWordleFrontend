@@ -1,5 +1,8 @@
 import { WorldsPlayersJson } from './playerDataService';
 
+// Add DEBUG_MODE variable for consistency with the rest of the app
+const DEBUG_MODE = typeof window !== 'undefined' && window.location.hostname === 'localhost'; 
+
 let cachedPlayerData: WorldsPlayersJson | null = null;
 let dailyPlayerCache: any = null;
 
@@ -43,22 +46,216 @@ function getTodayDateString(): string {
 }
 
 /**
- * Get a random player for use in games
+ * Get a random player for use in games, using appearance weights
+ * @param players Array of player entries
+ * @param gameMode The current game mode ('practice', 'daily', or 'record')
  */
-export function getRandomPlayer(players: any[]): any {
-  const index = Math.floor(Math.random() * players.length);
-  return players[index][1];
+export function getRandomPlayer(players: any[], gameMode: string = 'practice'): any {
+  // First step: Group players by appearances 
+  const appearanceGroups = {
+    '1-2': [] as any[], // 1-2 appearances (low weight)
+    '3-5': [] as any[], // 3-5 appearances (medium weight)
+    '6+': [] as any[]   // 6+ appearances (high weight)
+  };
+  
+  // Categorize players by appearance count
+  players.forEach(([key, playerData]) => {
+    const appearances = playerData.appearance || 0;
+    
+    if (appearances >= 6) {
+      appearanceGroups['6+'].push([key, playerData]);
+    } else if (appearances >= 3) {
+      appearanceGroups['3-5'].push([key, playerData]);
+    } else {
+      appearanceGroups['1-2'].push([key, playerData]);
+    }
+  });
+  
+  // Determine which localStorage key to use based on game mode
+  let storageKey;
+  let retiredStorageKey;
+  switch (gameMode) {
+    case 'record':
+      storageKey = 'leagueProWordleRecordAppearanceWeights';
+      retiredStorageKey = 'leagueProWordleRecordRetiredWeight';
+      break;
+    case 'daily':
+      storageKey = 'leagueProWordleDailyAppearanceWeights';
+      retiredStorageKey = 'leagueProWordleDailyRetiredWeight';
+      break;
+    case 'practice':
+    default:
+      storageKey = 'leagueProWordleAppearanceWeights';
+      retiredStorageKey = 'leagueProWordleRetiredWeight';
+      break;
+  }
+  
+  // Get saved weights from localStorage or use defaults
+  let weights = {
+    low: 15,    // 1-2 appearances (15%)
+    medium: 25, // 3-5 appearances (25%)
+    high: 60,   // 6+ appearances (60%)
+  };
+  
+  // Get saved retired probability (default 50%)
+  let retiredProbability = 50;
+  
+  try {
+    const savedWeights = localStorage.getItem(storageKey);
+    if (savedWeights) {
+      weights = JSON.parse(savedWeights);
+    }
+    
+    const savedRetiredProb = localStorage.getItem(retiredStorageKey);
+    if (savedRetiredProb) {
+      retiredProbability = parseInt(savedRetiredProb, 10);
+    }
+  } catch (e) {
+    console.error(`Failed to parse saved weights for ${gameMode} mode:`, e);
+  }
+  
+  if (DEBUG_MODE) {
+    console.log(`Player appearance distribution (${gameMode} mode):`, {
+      "1-2 appearances": appearanceGroups['1-2'].length,
+      "3-5 appearances": appearanceGroups['3-5'].length,
+      "6+ appearances": appearanceGroups['6+'].length,
+      "Total players": players.length,
+      "Weights used": weights,
+      "Retired probability": retiredProbability,
+      "StorageKey": storageKey
+    });
+  }
+  
+  // Calculate total weight
+  const totalWeight = weights.low + weights.medium + weights.high;
+  
+  // Pick a random weight value
+  const randomWeight = Math.random() * totalWeight;
+  
+  // Determine which group to pick from based on the weights
+  let selectedGroup;
+  if (randomWeight < weights.low) {
+    selectedGroup = appearanceGroups['1-2'];
+    if (DEBUG_MODE) console.log(`Selected group (${gameMode} mode): 1-2 appearances`);
+  } else if (randomWeight < weights.low + weights.medium) {
+    selectedGroup = appearanceGroups['3-5'];
+    if (DEBUG_MODE) console.log(`Selected group (${gameMode} mode): 3-5 appearances`);
+  } else {
+    selectedGroup = appearanceGroups['6+'];
+    if (DEBUG_MODE) console.log(`Selected group (${gameMode} mode): 6+ appearances`);
+  }
+  
+  // If selected group is empty, fall back to any player
+  if (!selectedGroup.length) {
+    if (DEBUG_MODE) console.log(`Selected group is empty (${gameMode} mode), falling back to random player`);
+    const allPlayers = [...appearanceGroups['1-2'], ...appearanceGroups['3-5'], ...appearanceGroups['6+']];
+    // Get a random player
+    const randomIndex = Math.floor(Math.random() * allPlayers.length);
+    return selectPlayerByRetiredStatus(allPlayers, randomIndex, retiredProbability);
+  }
+  
+  // Get a random player from the selected group
+  const randomIndex = Math.floor(Math.random() * selectedGroup.length);
+  return selectPlayerByRetiredStatus(selectedGroup, randomIndex, retiredProbability);
 }
 
 /**
- * Get a consistent daily player based on the date
+ * Helper function to select a player while respecting the retired player probability
+ * @param players Array of player entries [key, playerData]
+ * @param initialIndex The initially selected random index
+ * @param retiredProbability The probability (0-100) of selecting a retired player
+ */
+function selectPlayerByRetiredStatus(players: any[], initialIndex: number, retiredProbability: number): any {
+  // Get the initially selected player
+  const [_, initialPlayer] = players[initialIndex];
+  
+  // Check if the player is retired
+  const isRetired = typeof initialPlayer.isRetired === 'string' 
+    ? initialPlayer.isRetired === "1" 
+    : Boolean(initialPlayer.isRetired);
+  
+  // Get current role info
+  const currentRole = (initialPlayer.current_role || initialPlayer.player_current_role || '').toLowerCase();
+  const isActiveRole = ['top', 'jungle', 'mid', 'bot', 'adc', 'support'].includes(currentRole);
+  
+  // Consider as "retired" in our logic if either formally retired or doesn't have active role or team
+  const isConsideredRetired = isRetired || !initialPlayer.current_team || !isActiveRole;
+  
+  // Random roll to determine if we should respect the retired status
+  const retiredRoll = Math.random() * 100;
+  
+  // If the player's retired status aligns with our probability roll, use this player
+  if ((retiredRoll < retiredProbability && isConsideredRetired) || 
+      (retiredRoll >= retiredProbability && !isConsideredRetired)) {
+    return initialPlayer;
+  }
+  
+  if (DEBUG_MODE) {
+    console.log(`Re-rolling player due to retired status mismatch: 
+      Selected ${isConsideredRetired ? 'retired' : 'active'} player but needed ${retiredRoll < retiredProbability ? 'retired' : 'active'}`);
+  }
+  
+  // Try to find a player with the opposite retired status
+  const matchingPlayers = players.filter(([_, player]) => {
+    const playerIsRetired = typeof player.isRetired === 'string' 
+      ? player.isRetired === "1" 
+      : Boolean(player.isRetired);
+    
+    const playerRole = (player.current_role || player.player_current_role || '').toLowerCase();
+    const playerIsActiveRole = ['top', 'jungle', 'mid', 'bot', 'adc', 'support'].includes(playerRole);
+    
+    const playerConsideredRetired = playerIsRetired || !player.current_team || !playerIsActiveRole;
+    
+    // Return true if the player's retired status matches what we need
+    return retiredRoll < retiredProbability ? playerConsideredRetired : !playerConsideredRetired;
+  });
+  
+  // If we found matching players, select one randomly
+  if (matchingPlayers.length > 0) {
+    const newIndex = Math.floor(Math.random() * matchingPlayers.length);
+    if (DEBUG_MODE) console.log(`Found ${matchingPlayers.length} matching players, selected index ${newIndex}`);
+    return matchingPlayers[newIndex][1];
+  }
+  
+  // If no matching players found, just use the initial selection
+  if (DEBUG_MODE) console.log(`No matching players found, using initial selection`);
+  return initialPlayer;
+}
+
+/**
+ * Get the player for today's daily challenge
+ * @param players Array of player entries
  */
 export function getDailyPlayer(players: any[]): any {
-  // Get today's date and use it to seed the random selection
-  const today = getTodayDateString();
-  const hash = simpleHash(today);
-  const index = hash % players.length;
-  return players[index][1];
+  const todayString = getTodayDateString();
+  
+  // Check if there's a cached daily player for today
+  const cachedDaily = localStorage.getItem('leagueProWordleDailyTarget');
+  if (cachedDaily) {
+    try {
+      const { date, player } = JSON.parse(cachedDaily);
+      if (date === todayString) {
+        if (DEBUG_MODE) console.log("Using cached daily player for", todayString);
+        return player;
+      }
+    } catch (e) {
+      console.error("Failed to parse cached daily player:", e);
+    }
+  }
+
+  // No valid cached player for today, generate a new one
+  if (DEBUG_MODE) console.log("Generating new daily player for", todayString);
+  
+  // Get a random player using the 'daily' game mode for appropriate weights
+  const player = getRandomPlayer(players, 'daily');
+  
+  // Cache the daily player
+  localStorage.setItem('leagueProWordleDailyTarget', JSON.stringify({
+    date: todayString,
+    player
+  }));
+  
+  return player;
 }
 
 /**
@@ -290,7 +487,4 @@ export async function getDebugDailyAnswer(): Promise<any> {
     nationality: dailyPlayer.nationality,
     appearances: dailyPlayer.appearance
   };
-}
-
-// Add DEBUG_MODE variable for consistency with the rest of the app
-const DEBUG_MODE = typeof window !== 'undefined' && window.location.hostname === 'localhost'; 
+} 

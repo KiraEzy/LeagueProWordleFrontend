@@ -3,6 +3,7 @@ import { Button, message, Spin, Typography, AutoComplete, Tooltip, Tag } from 'a
 import { QuestionCircleOutlined, BugOutlined, TrophyOutlined, UndoOutlined } from '@ant-design/icons';
 import './SinglePlayerPage.css'; // Reuse the same CSS
 import { Link } from 'react-router-dom';
+import AppearanceSettings from '../components/AppearanceSettings';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -12,8 +13,6 @@ import { fetchAndFormatPlayers } from '../services/playerDataService';
 import { getDailyChallenge, submitGuess, getAllPlayers, getDebugDailyAnswer } from '../services/api';
 // Import session service for anonymous ID
 import { getOrCreateAnonymousId } from '../services/sessionService';
-// Import appearance settings component
-// import AppearanceSettings from '../components/AppearanceSettings';
 
 // Set to true for development, false for production
 const DEBUG_MODE = process.env.NODE_ENV === 'development';
@@ -520,6 +519,8 @@ function DailyPage() {
         <Paragraph>
           每天猜一个新的职业选手！您今天还剩 <strong>{remainingGuesses}</strong> 次猜测机会。
         </Paragraph>
+        
+        <AppearanceSettings gameMode="daily" />
         
         {/* Always show answer if available */}
         {debugAnswer && (

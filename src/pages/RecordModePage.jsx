@@ -7,6 +7,8 @@ const { Title, Text, Paragraph } = Typography;
 
 // Import the player data service instead of the JSON file
 import { fetchAndFormatPlayers } from '../services/playerDataService';
+// Import getRandomPlayer from offline service
+import { getRandomPlayer } from '../services/offlinePlayerService';
 // Import API functions
 import { getDailyGame, submitGuess } from '../services/api';
 // Import appearance settings component
@@ -217,7 +219,7 @@ function RecordModePage() {
         setAllPlayers(formatted);
         
         // For Record Mode, select a random player
-        const randomPlayer = getRandomPlayer(playerEntries);
+        const randomPlayer = getRandomPlayer(playerEntries, 'record');
         setTargetPlayer(randomPlayer);
         setApiError(false);
         
@@ -240,114 +242,6 @@ function RecordModePage() {
   useEffect(() => {
     localStorage.setItem('leagueProWordleRecordStats', JSON.stringify(gameStats));
   }, [gameStats]);
-
-  const getRandomPlayer = (playerEntries) => {
-    // Group players by appearances for weighted selection
-    const appearanceGroups = {
-      '1-2': [], // 1-2 appearances (low weight)
-      '3-5': [], // 3-5 appearances (medium weight)
-      '6+': []   // 6+ appearances (high weight)
-    };
-    
-    // Categorize players by appearance count
-    playerEntries.forEach(([key, playerData]) => {
-      const appearances = playerData.appearance || 0;
-      
-      if (appearances >= 6) {
-        appearanceGroups['6+'].push([key, playerData]);
-      } else if (appearances >= 3) {
-        appearanceGroups['3-5'].push([key, playerData]);
-      } else {
-        appearanceGroups['1-2'].push([key, playerData]);
-      }
-    });
-    
-    // Log appearance distribution if in debug mode
-    if (DEBUG_MODE) {
-      console.log("Player appearance distribution:", {
-        "1-2 appearances": appearanceGroups['1-2'].length,
-        "3-5 appearances": appearanceGroups['3-5'].length,
-        "6+ appearances": appearanceGroups['6+'].length,
-        "Total players": playerEntries.length
-      });
-    }
-    
-    // Get saved weights from localStorage or use defaults
-    let weights = {
-      low: 10,   // 1-2 appearances (10%)
-      medium: 30, // 3-5 appearances (30%)
-      high: 60,   // 6+ appearances (60%)
-    };
-    
-    try {
-      const savedWeights = localStorage.getItem('leagueProWordleRecordAppearanceWeights');
-      if (savedWeights) {
-        weights = JSON.parse(savedWeights);
-      }
-    } catch (e) {
-      console.error('Failed to parse saved weights:', e);
-    }
-    
-    // Assign weights to each group
-    const groupWeights = {
-      '1-2': weights.low,
-      '3-5': weights.medium,
-      '6+': weights.high
-    };
-    
-    // First select a group based on weights
-    const totalWeight = Object.values(groupWeights).reduce((sum, weight) => sum + weight, 0);
-    let randomWeight = Math.random() * totalWeight;
-    let selectedGroup = '6+'; // Default to high appearances
-    
-    // Determine which group to select from
-    for (const [group, weight] of Object.entries(groupWeights)) {
-      if (randomWeight <= weight) {
-        selectedGroup = group;
-        break;
-      }
-      randomWeight -= weight;
-    }
-    
-    // If the selected group has no players, fall back to any group with players
-    if (appearanceGroups[selectedGroup].length === 0) {
-      const nonEmptyGroups = Object.entries(appearanceGroups)
-        .filter(([_, players]) => players.length > 0)
-        .map(([group]) => group);
-      
-      if (nonEmptyGroups.length === 0) {
-        // If no players in any group, return a random player from all entries
-        const randomIndex = Math.floor(Math.random() * playerEntries.length);
-        const [key, playerData] = playerEntries[randomIndex];
-        
-        return {
-          name: key,
-          ...playerData,
-          // Rename worldAppearances for consistency
-          worldAppearances: playerData.appearance
-        };
-      }
-      
-      // Select a random non-empty group
-      selectedGroup = nonEmptyGroups[Math.floor(Math.random() * nonEmptyGroups.length)];
-    }
-    
-    // Select a random player from the chosen group
-    const selectedPlayers = appearanceGroups[selectedGroup];
-    const randomIndex = Math.floor(Math.random() * selectedPlayers.length);
-    const [key, playerData] = selectedPlayers[randomIndex];
-
-    if (DEBUG_MODE) {
-      console.log(`Selected player from "${selectedGroup}" appearance group: ${key} (${playerData.appearance} appearances)`);
-    }
-    
-    return {
-      name: key,
-      ...playerData,
-      // Rename worldAppearances for consistency
-      worldAppearances: playerData.appearance
-    };
-  };
 
   const handleInputChange = (value) => {
     setCurrentGuess(value);
@@ -527,7 +421,7 @@ function RecordModePage() {
     // Select a new random player
     setTimeout(() => {
       const playerEntries = Object.entries(allPlayers);
-      const randomPlayer = getRandomPlayer(playerEntries);
+      const randomPlayer = getRandomPlayer(playerEntries, 'record');
       setTargetPlayer(randomPlayer);
       setLoading(false);
     }, 1000);
@@ -572,6 +466,7 @@ function RecordModePage() {
     <div className="single-player-page record-mode-page">
       <div className="game-header">
         <Title level={2}>记录模式 <TrophyOutlined style={{ color: '#FFB900' }} /></Title>
+        <AppearanceSettings gameMode="record" />
         {/* Always show answer regardless of debug mode */}
         {/* <Tag color="blue" icon={<QuestionCircleOutlined />}>
           当前答案: {targetPlayer?.name} ({targetPlayer?.formattedTeam}
