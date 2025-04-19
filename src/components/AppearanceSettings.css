@@ -11,10 +11,11 @@
   position: absolute;
   top: 40px;
   right: 0;
-  width: 400px;
+  width: 450px;
   z-index: 100;
   border: 1px solid #d9d9d9;
   box-shadow: 0 3px 6px -4px rgba(0,0,0,0.12), 0 6px 16px 0 rgba(0,0,0,0.08), 0 9px 28px 8px rgba(0,0,0,0.05);
+  padding: 20px;
 }
 
 .info-icon {
@@ -22,21 +23,25 @@
 }
 
 .weight-slider {
-  margin: 15px 0;
+  margin: 15px 0 25px;
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.weight-slider .ant-typography {
+  margin-bottom: 5px;
 }
 
 .weight-slider .ant-slider {
-  flex: 1;
-  margin: 0 10px;
-  min-width: 200px;
+  width: 100%;
+  margin: 5px 0;
 }
 
 .weight-value {
-  min-width: 40px;
-  text-align: right;
+  align-self: flex-end;
+  margin-top: 25px;
+  font-weight: bold;
 }
 
 .settings-actions {
@@ -56,8 +61,8 @@
 
 /* Add subtitle styling */
 .settings-card h5.ant-typography {
-  margin-top: 16px;
-  margin-bottom: 8px;
+  margin-top: 8px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
 }
@@ -80,4 +85,43 @@
   .settings-actions button {
     width: 100%;
   }
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 12px;
+  font-size: 12px;
+  position: relative;
+  padding-top: 15px;
+}
+
+.slider-label-left {
+  color: #389e0d;
+  text-align: left;
+  flex: 1;
+}
+
+.slider-label-right {
+  color: #cf1322;
+  text-align: right;
+  flex: 1;
+}
+
+/* Position the percentage value in the center */
+.slider-labels .weight-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0;
+  font-size: 14px;
+  background-color: white;
+  padding: 0 8px;
+  border-radius: 10px;
+}
+
+/* Adjust spacing for better visual hierarchy */
+.settings-card .ant-divider {
+  margin: 24px 0 16px;
 } 

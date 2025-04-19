@@ -263,18 +263,23 @@ function AppearanceSettings({ gameMode }) {
           </Title>
           
           <div className="weight-slider">
+            <Text>退役选手出现概率</Text>
             <Slider
               value={tempRetiredProbability}
               onChange={handleRetiredProbabilityChange}
               min={0}
               max={100}
               marks={{
-                0: '0%（只抽取在役选手）',
+                0: '0%',
                 50: '50%',
-                100: '100%（只抽取退役选手）'
+                100: '100%'
               }}
             />
-            <Text className="weight-value">{tempRetiredProbability}%</Text>
+            <div className="slider-labels">
+              <Text className="slider-label-left">只抽取在役选手</Text>
+              <Text className="weight-value">{tempRetiredProbability}%</Text>
+              <Text className="slider-label-right">只抽取退役选手</Text>
+            </div>
           </div>
           
           <div className="settings-actions">
